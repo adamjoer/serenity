@@ -591,20 +591,37 @@ void AbstractView::keydown_event(KeyEvent& event)
     if (is_searchable()) {
         if (event.key() == KeyCode::Key_Backspace) {
             if (!m_highlighted_search.is_null()) {
-                // if (event.modifiers() == Mod_Ctrl) {
-                //  TODO: delete last word
-                // }
                 Utf8View view(m_highlighted_search);
-                size_t n_code_points = view.length();
-                if (n_code_points > 1) {
-                    n_code_points--;
+
+                if (size_t n_code_points = view.length(); n_code_points > 1) {
                     StringBuilder sb;
-                    for (auto it = view.begin(); it != view.end(); ++it) {
-                        if (n_code_points == 0)
-                            break;
+                    if (event.modifiers() == Mod_Ctrl) {
+
+                        auto last_whitespace_it = view.end();
+                        for (auto it = view.begin(); it != view.end(); ++it) {
+                            if (is_ascii_space(*it))
+                                last_whitespace_it = it;
+                        }
+
+                        if (last_whitespace_it == view.end()) {
+                            stop_highlighted_search_timer();
+                            event.accept();
+                            return;
+                        }
+
+                        for (auto it = view.begin(); it != last_whitespace_it; ++it)
+                            sb.append_code_point(*it);
+
+                    } else {
                         n_code_points--;
-                        sb.append_code_point(*it);
+                        for (auto it = view.begin(); it != view.end(); ++it) {
+                            if (n_code_points == 0)
+                                break;
+                            n_code_points--;
+                            sb.append_code_point(*it);
+                        }
                     }
+
                     auto index = find_next_search_match(sb.string_view());
                     if (index.is_valid()) {
                         m_highlighted_search = sb.to_deprecated_string();
