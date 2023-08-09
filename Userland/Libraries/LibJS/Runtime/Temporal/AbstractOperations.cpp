@@ -7,6 +7,7 @@
  */
 
 #include <AK/CharacterTypes.h>
+#include <AK/QuickSort.h>
 #include <AK/String.h>
 #include <AK/TypeCasts.h>
 #include <AK/Variant.h>
@@ -1907,6 +1908,19 @@ ThrowCompletionOr<DifferenceSettings> get_difference_settings(VM& vm, Difference
         .rounding_increment = rounding_increment,
         .options = *options,
     };
+}
+
+// 14.3 SortStringListByCodeUnit ( strings ), https://tc39.es/proposal-temporal/#sec-sortstringlistbycodeunit
+Vector<String> sort_string_list_by_code_unit(Vector<String> const& strings)
+{
+    // 1. Let result be a copy of strings.
+    auto result = strings;
+
+    // 2. Sort result into the same order as if an Array of the same values had been sorted using %Array.prototype.sort% with undefined as comparefn.
+    quick_sort(result, [](auto const& a, auto const& b) { return a < b; });
+
+    // 3. Return result.
+    return result;
 }
 
 }

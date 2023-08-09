@@ -58,9 +58,8 @@ ReadonlySpan<StringView> available_calendars()
 
     // 2. Assert: calendars contains "iso8601".
     // 3. Assert: calendars does not contain any element that does not identify a calendar type in the Unicode Common Locale Data Repository (CLDR).
-    // 4. Sort calendars in order as if an Array of the same values had been sorted using %Array.prototype.sort% with undefined as comparefn.
 
-    // 5. Return calendars.
+    // 4. Return SortStringListByCodeUnit(calendars).
     return calendars.span();
 }
 

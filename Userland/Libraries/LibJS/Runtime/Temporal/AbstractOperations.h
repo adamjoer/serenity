@@ -177,6 +177,7 @@ ThrowCompletionOr<TemporalYearMonth> parse_temporal_year_month_string(VM&, Strin
 ThrowCompletionOr<double> to_positive_integer_with_truncation(VM&, Value argument);
 ThrowCompletionOr<Object*> prepare_temporal_fields(VM&, Object const& fields, Vector<String> const& field_names, Variant<PrepareTemporalFieldsPartial, Vector<StringView>> const& required_fields);
 ThrowCompletionOr<DifferenceSettings> get_difference_settings(VM&, DifferenceOperation, Value options_value, UnitGroup unit_group, Vector<StringView> const& disallowed_units, TemporalUnitDefault const& fallback_smallest_unit, StringView smallest_largest_default_unit);
+Vector<String> sort_string_list_by_code_unit(Vector<String> const& strings);
 
 template<size_t Size>
 ThrowCompletionOr<Value> get_option(VM& vm, Object const& options, PropertyKey const& property, OptionType type, StringView const (&values)[Size], OptionDefault const& default_)
