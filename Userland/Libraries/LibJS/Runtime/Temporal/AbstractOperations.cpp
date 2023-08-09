@@ -1791,8 +1791,11 @@ ThrowCompletionOr<Object*> prepare_temporal_fields(VM& vm, Object const& fields,
     // 2. Let any be false.
     auto any = false;
 
-    // 3. For each value property of fieldNames, do
-    for (auto& property : field_names) {
+    // 3. Let sortedFieldNames be SortStringListByCodeUnit(fieldNames).
+    auto const sorted_field_names = sort_string_list_by_code_unit(field_names);
+
+    // 4. For each property name property of sortedFieldNames, do
+    for (auto const& property : sorted_field_names) {
         // a. Let value be ? Get(fields, property).
         auto value = TRY(fields.get(property.to_deprecated_string()));
 
@@ -1844,13 +1847,13 @@ ThrowCompletionOr<Object*> prepare_temporal_fields(VM& vm, Object const& fields,
         }
     }
 
-    // 4. If requiredFields is partial and any is false, then
+    // 5. If requiredFields is partial and any is false, then
     if (required_fields.has<PrepareTemporalFieldsPartial>() && !any) {
         // a. Throw a TypeError exception.
         return vm.throw_completion<TypeError>(ErrorType::TemporalObjectMustHaveOneOf, TRY_OR_THROW_OOM(vm, String::join(", "sv, field_names)));
     }
 
-    // 5. Return result.
+    // 6. Return result.
     return result.ptr();
 }
 
