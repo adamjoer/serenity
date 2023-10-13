@@ -41,11 +41,14 @@ void SortingProxyModel::update_sort(unsigned flags)
             view.selection().clear();
         });
     }
+
+    dbgln("SortingProxyModel: Sending update signal");
     did_update(flags);
 }
 
 void SortingProxyModel::model_did_update(unsigned flags)
 {
+    dbgln("SortingProxyModel: Handling model update");
     update_sort(flags);
 }
 

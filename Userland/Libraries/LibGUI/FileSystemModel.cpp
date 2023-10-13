@@ -392,6 +392,7 @@ void FileSystemModel::invalidate()
 
 void FileSystemModel::handle_file_event(Core::FileWatcherEvent const& event)
 {
+    dbgln("FileSystemModel: Handling file event: path=\"{}\", type={}", event.event_path, event.type);
     if (event.type == Core::FileWatcherEvent::Type::ChildCreated) {
         if (node_for_path(event.event_path).has_value())
             return;
@@ -505,12 +506,17 @@ void FileSystemModel::handle_file_event(Core::FileWatcherEvent const& event)
         mutable_child.gid = st.st_gid;
         mutable_child.inode = st.st_ino;
         mutable_child.mtime = st.st_mtime;
+        dbgln("New child: name=\"{}\", size={}, user={}, group={}, mode={}, mtime={}",
+            mutable_child.name, human_readable_size(mutable_child.size), name_for_gid(mutable_child.uid),
+            name_for_gid(mutable_child.gid), permission_string(mutable_child.mode), timestamp_string(mutable_child.mtime));
+
         break;
     }
     default:
         VERIFY_NOT_REACHED();
     }
 
+    dbgln("FileSystemModel: Sending update signal");
     did_update(UpdateFlag::DontInvalidateIndices);
 }
 

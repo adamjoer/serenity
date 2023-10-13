@@ -332,6 +332,7 @@ DirectoryView::~DirectoryView()
 
 void DirectoryView::model_did_update(unsigned flags)
 {
+    dbgln("DirectoryView: Handling model update");
     if (flags & GUI::Model::UpdateFlag::InvalidateAllIndices) {
         for_each_view_implementation([](auto& view) {
             view.selection().clear();
