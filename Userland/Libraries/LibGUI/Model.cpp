@@ -308,26 +308,26 @@ void Model::change_persistent_index_list(Vector<ModelIndex> const& old_indices, 
 void Model::handle_insert(Operation const& operation)
 {
     bool is_row = operation.direction == Direction::Row;
-    Vector<ModelIndex*> to_shift;
+    Vector<HashMap<ModelIndex, OwnPtr<PersistentHandle>>::IteratorType> to_shift;
 
-    for (auto& entry : m_persistent_handles) {
-        if (entry.key.parent() == operation.source_parent) {
-            if (is_row && entry.key.row() >= operation.first) {
-                to_shift.append(&entry.key);
-            } else if (!is_row && entry.key.column() >= operation.first) {
-                to_shift.append(&entry.key);
+    for (auto it = m_persistent_handles.begin(); it != m_persistent_handles.end(); ++it) {
+        if (it->key.parent() == operation.source_parent) {
+            if (is_row && it->key.row() >= operation.first) {
+                to_shift.append(it);
+            } else if (!is_row && it->key.column() >= operation.first) {
+                to_shift.append(it);
             }
         }
     }
 
     int offset = operation.last - operation.first + 1;
 
-    for (auto current_index : to_shift) {
-        int new_row = is_row ? current_index->row() + offset : current_index->row();
-        int new_column = is_row ? current_index->column() : current_index->column() + offset;
-        auto new_index = create_index(new_row, new_column, current_index->internal_data());
+    for (auto it : to_shift) {
+        auto const& current_index = it->key;
+        int new_row = is_row ? current_index.row() + offset : current_index.row();
+        int new_column = is_row ? current_index.column() : current_index.column() + offset;
+        auto new_index = create_index(new_row, new_column, current_index.internal_data());
 
-        auto it = m_persistent_handles.find(*current_index);
         auto handle = move(it->value);
 
         handle->m_index = new_index;
@@ -341,22 +341,22 @@ void Model::handle_delete(Operation const& operation)
 {
     bool is_row = operation.direction == Direction::Row;
     Vector<ModelIndex> deleted_indices = m_deleted_indices_stack.take_last();
-    Vector<ModelIndex*> to_shift;
+    Vector<HashMap<ModelIndex, OwnPtr<PersistentHandle>>::IteratorType> to_shift;
 
     // Get rid of all persistent handles which have been marked for death
     for (auto& deleted_index : deleted_indices) {
         m_persistent_handles.remove(deleted_index);
     }
 
-    for (auto& entry : m_persistent_handles) {
-        if (entry.key.parent() == operation.source_parent) {
+    for (auto it = m_persistent_handles.begin(); it != m_persistent_handles.end(); ++it) {
+        if (it->key.parent() == operation.source_parent) {
             if (is_row) {
-                if (entry.key.row() > operation.last) {
-                    to_shift.append(&entry.key);
+                if (it->key.row() > operation.last) {
+                    to_shift.append(it);
                 }
             } else {
-                if (entry.key.column() > operation.last) {
-                    to_shift.append(&entry.key);
+                if (it->key.column() > operation.last) {
+                    to_shift.append(it);
                 }
             }
         }
@@ -364,12 +364,12 @@ void Model::handle_delete(Operation const& operation)
 
     int offset = operation.last - operation.first + 1;
 
-    for (auto current_index : to_shift) {
-        int new_row = is_row ? current_index->row() - offset : current_index->row();
-        int new_column = is_row ? current_index->column() : current_index->column() - offset;
-        auto new_index = create_index(new_row, new_column, current_index->internal_data());
+    for (auto it : to_shift) {
+        auto const& current_index = it->key;
+        int new_row = is_row ? current_index.row() - offset : current_index.row();
+        int new_column = is_row ? current_index.column() : current_index.column() - offset;
+        auto new_index = create_index(new_row, new_column, current_index.internal_data());
 
-        auto it = m_persistent_handles.find(*current_index);
         auto handle = move(it->value);
 
         handle->m_index = new_index;
@@ -397,44 +397,45 @@ void Model::handle_move(Operation const& operation)
     }
 
     // NOTE: to_shift_down is used as a generic "to shift" when move_within is true.
-    Vector<ModelIndex*> to_move;       // Items to be moved between the source and target
-    Vector<ModelIndex*> to_shift_down; // Items to be shifted down after a move-to
-    Vector<ModelIndex*> to_shift_up;   // Items to be shifted up after a move-from
+    Vector<HashMap<ModelIndex, OwnPtr<PersistentHandle>>::IteratorType> to_move;       // Items to be moved between the source and target
+    Vector<HashMap<ModelIndex, OwnPtr<PersistentHandle>>::IteratorType> to_shift_down; // Items to be shifted down after a move-to
+    Vector<HashMap<ModelIndex, OwnPtr<PersistentHandle>>::IteratorType> to_shift_up;   // Items to be shifted up after a move-from
 
     int count = operation.last - operation.first + 1;
     // [start, end)
     int work_area_start = min(operation.first, operation.target);
     int work_area_end = max(operation.last + 1, operation.target + count);
 
-    for (auto& entry : m_persistent_handles) {
-        int dimension = is_row ? entry.key.row() : entry.key.column();
+    for (auto it = m_persistent_handles.begin(); it != m_persistent_handles.end(); ++it) {
+        int dimension = is_row ? it->key.row() : it->key.column();
 
         if (move_within) {
-            if (entry.key.parent() == operation.source_parent) {
+            if (it->key.parent() == operation.source_parent) {
                 if (dimension >= operation.first && dimension <= operation.last) {
-                    to_move.append(&entry.key);
+                    to_move.append(it);
                 } else if (moving_down && dimension > operation.last && dimension < work_area_end) {
-                    to_shift_down.append(&entry.key);
+                    to_shift_down.append(it);
                 } else if (!moving_down && dimension >= work_area_start && dimension < operation.first) {
-                    to_shift_down.append(&entry.key);
+                    to_shift_down.append(it);
                 }
             }
         } else {
-            if (entry.key.parent() == operation.source_parent) {
+            if (it->key.parent() == operation.source_parent) {
                 if (dimension >= operation.first && dimension <= operation.last) {
-                    to_move.append(&entry.key);
+                    to_move.append(it);
                 } else if (dimension > operation.last) {
-                    to_shift_up.append(&entry.key);
+                    to_shift_up.append(it);
                 }
-            } else if (entry.key.parent() == operation.target_parent) {
+            } else if (it->key.parent() == operation.target_parent) {
                 if (dimension >= operation.target) {
-                    to_shift_down.append(&entry.key);
+                    to_shift_down.append(it);
                 }
             }
         }
     }
 
-    auto replace_handle = [&](ModelIndex const& current_index, int new_dimension, bool relative) {
+    auto replace_handle = [&](HashMap<ModelIndex, OwnPtr<PersistentHandle>>::IteratorType& it, int new_dimension, bool relative) {
+        auto const& current_index = it->key;
         int new_row = is_row
             ? (relative
                     ? current_index.row() + new_dimension
@@ -447,7 +448,6 @@ void Model::handle_move(Operation const& operation)
             : current_index.column();
         auto new_index = index(new_row, new_column, operation.target_parent);
 
-        auto it = m_persistent_handles.find(current_index);
         auto handle = move(it->value);
 
         handle->m_index = new_index;
@@ -456,29 +456,31 @@ void Model::handle_move(Operation const& operation)
         m_persistent_handles.set(move(new_index), move(handle));
     };
 
-    for (auto current_index : to_move) {
-        int dimension = is_row ? current_index->row() : current_index->column();
+    for (auto it : to_move) {
+        auto const& current_index = it->key;
+        int dimension = is_row ? current_index.row() : current_index.column();
         int target_offset = dimension - operation.first;
         int new_dimension = operation.target + target_offset;
 
-        replace_handle(*current_index, new_dimension, false);
+        replace_handle(it, new_dimension, false);
     }
 
     if (move_within) {
-        for (auto current_index : to_shift_down) {
-            int dimension = is_row ? current_index->row() : current_index->column();
+        for (auto it : to_shift_down) {
+            auto const& current_index = it->key;
+            int dimension = is_row ? current_index.row() : current_index.column();
             int target_offset = moving_down ? dimension - (operation.last + 1) : dimension - work_area_start + count;
             int new_dimension = work_area_start + target_offset;
 
-            replace_handle(*current_index, new_dimension, false);
+            replace_handle(it, new_dimension, false);
         }
     } else {
-        for (auto current_index : to_shift_down) {
-            replace_handle(*current_index, count, true);
+        for (auto it : to_shift_down) {
+            replace_handle(it, count, true);
         }
 
-        for (auto current_index : to_shift_up) {
-            replace_handle(*current_index, count, true);
+        for (auto it : to_shift_up) {
+            replace_handle(it, count, true);
         }
     }
 }
