@@ -160,3 +160,29 @@ private:
 };
 
 }
+
+template<>
+struct AK::Formatter<WindowServer::TileWindow> : AK::Formatter<FormatString> {
+    ErrorOr<void> format(FormatBuilder& builder, WindowServer::TileWindow value)
+    {
+        StringView value_string;
+        switch (value) {
+        case (WindowServer::TileWindow::TileImmediately):
+            value_string = "TileImmediately"sv;
+            break;
+        case (WindowServer::TileWindow::ShowTileOverlay):
+            value_string = "ShowTileOverlay"sv;
+            break;
+        case (WindowServer::TileWindow::Never):
+            value_string = "Never"sv;
+            break;
+        case (WindowServer::TileWindow::__Count):
+            value_string = "__Count"sv;
+            break;
+        default:
+            value_string = "??"sv;
+            break;
+        }
+        return AK::Formatter<FormatString>::format(builder, "{}"sv, value_string);
+    }
+};

@@ -24,6 +24,7 @@
 #include <WindowServer/ResizeDirection.h>
 #include <WindowServer/ScreenLayout.h>
 #include <WindowServer/SystemEffects.h>
+#include <WindowServer/TileSuggester.h>
 #include <WindowServer/WMConnectionFromClient.h>
 #include <WindowServer/WindowSwitcher.h>
 #include <WindowServer/WindowType.h>
@@ -79,6 +80,8 @@ public:
     void notify_occlusion_state_changed(Window&);
     void notify_progress_changed(Window&);
     void notify_modified_changed(Window&);
+
+    void foo(Window const&);
 
     Gfx::IntRect tiled_window_rect(Window const&, Optional<Screen const&> = {}, WindowTileType tile_type = WindowTileType::Maximized) const;
 
@@ -478,6 +481,8 @@ private:
 
     NonnullRefPtr<WindowSwitcher> m_switcher;
     NonnullRefPtr<KeymapSwitcher> m_keymap_switcher;
+
+    NonnullRefPtr<TileSuggester> m_tile_suggester;
 
     WeakPtr<Button> m_cursor_tracking_button;
     WeakPtr<Button> m_hovered_button;

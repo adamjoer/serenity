@@ -753,6 +753,7 @@ void ConnectionFromClient::did_finish_painting(i32 window_id, Vector<Gfx::IntRec
         WindowManager::the().reevaluate_hover_state_for_window(&window);
 
     WindowSwitcher::the().refresh_if_needed();
+    TileSuggester::the().refresh_if_needed();
 }
 
 void ConnectionFromClient::set_window_backing_store(i32 window_id, [[maybe_unused]] i32 bpp,

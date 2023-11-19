@@ -39,6 +39,7 @@ WindowManager& WindowManager::the()
 WindowManager::WindowManager(Gfx::PaletteImpl& palette)
     : m_switcher(WindowSwitcher::construct())
     , m_keymap_switcher(KeymapSwitcher::construct())
+    , m_tile_suggester(TileSuggester::construct())
     , m_palette(palette)
 {
     s_the = this;
@@ -349,6 +350,9 @@ void WindowManager::add_window(Window& window)
     if (m_switcher->is_visible() && window.type() != WindowType::WindowSwitcher)
         m_switcher->refresh();
 
+    if (m_tile_suggester->is_visible() && window.type() != WindowType::WindowSwitcher)
+        m_tile_suggester->refresh();
+
     Compositor::the().invalidate_occlusions();
 
     window.invalidate(true, true);
@@ -387,6 +391,9 @@ void WindowManager::move_to_front_and_make_active(Window& window)
         }
     }
 
+    if (m_tile_suggester->is_visible())
+        m_tile_suggester->hide();
+
     Compositor::the().invalidate_occlusions();
 }
 
@@ -406,6 +413,9 @@ void WindowManager::remove_window(Window& window)
 
     if (m_switcher->is_visible() && window.type() != WindowType::WindowSwitcher)
         m_switcher->refresh();
+
+    if (m_tile_suggester->is_visible() && window.type() != WindowType::WindowSwitcher)
+        m_tile_suggester->refresh();
 
     Compositor::the().invalidate_occlusions();
 
@@ -601,6 +611,9 @@ void WindowManager::notify_modified_changed(Window& window)
     if (m_switcher->is_visible())
         m_switcher->refresh();
 
+    if (m_tile_suggester->is_visible())
+        m_tile_suggester->refresh();
+
     tell_wms_window_state_changed(window);
 }
 
@@ -614,6 +627,9 @@ void WindowManager::notify_title_changed(Window& window)
     if (m_switcher->is_visible())
         m_switcher->refresh();
 
+    if (m_tile_suggester->is_visible())
+        m_tile_suggester->refresh();
+
     tell_wms_window_state_changed(window);
 }
 
@@ -623,6 +639,9 @@ void WindowManager::notify_rect_changed(Window& window, Gfx::IntRect const& old_
 
     if (m_switcher->is_visible() && window.type() != WindowType::WindowSwitcher)
         m_switcher->refresh();
+
+    if (m_tile_suggester->is_visible() && window.type() != WindowType::WindowSwitcher)
+        m_tile_suggester->refresh();
 
     tell_wms_window_rect_changed(window);
 
@@ -1732,6 +1751,11 @@ void WindowManager::process_key_event(KeyEvent& event)
         return;
     }
 
+    if (m_tile_suggester->is_visible()) {
+        m_tile_suggester->on_key_event(event);
+        return;
+    }
+
     if (event.type() == Event::KeyDown && (event.modifiers() == (Mod_Alt | Mod_Shift) && (event.key() == Key_Shift || event.key() == Key_Alt))) {
         m_keymap_switcher->next_keymap();
         return;
@@ -2055,6 +2079,12 @@ ResizeDirection WindowManager::resize_direction_of_window(Window const& window)
     if (&window != m_resize_window)
         return ResizeDirection::None;
     return m_resize_direction;
+}
+
+void WindowManager::foo(Window const& window)
+{
+    dbgln("WindowManager::foo: window={}", window);
+    m_tile_suggester->show(window);
 }
 
 Gfx::IntRect WindowManager::tiled_window_rect(Window const& window, Optional<Screen const&> cursor_screen, WindowTileType tile_type) const

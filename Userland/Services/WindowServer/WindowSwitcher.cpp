@@ -38,6 +38,8 @@ void WindowSwitcher::set_visible(bool visible)
         m_switcher_window->set_visible(visible);
     if (!m_visible)
         return;
+
+    TileSuggester::the().hide();
     clear_hovered_index();
     refresh();
 }

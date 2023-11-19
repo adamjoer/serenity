@@ -9,6 +9,7 @@
 
 #include "HitTestResult.h"
 #include <AK/DeprecatedString.h>
+#include <AK/Format.h>
 #include <AK/IntrusiveList.h>
 #include <AK/WeakPtr.h>
 #include <LibCore/EventReceiver.h>
@@ -470,3 +471,62 @@ public:
 };
 
 }
+
+template<>
+struct AK::Formatter<WindowServer::Window> : AK::Formatter<FormatString> {
+    ErrorOr<void> format(FormatBuilder& builder, WindowServer::Window const& value)
+    {
+        return AK::Formatter<FormatString>::format(builder, "Window(window_id={}, title={}, type={}, tile_type={}, rect={})"sv,
+            value.window_id(), value.title(), value.type(), value.tile_type(), value.rect());
+    }
+};
+
+template<>
+struct AK::Formatter<WindowServer::WindowTileType> : AK::Formatter<FormatString> {
+    ErrorOr<void> format(FormatBuilder& builder, WindowServer::WindowTileType value)
+    {
+        StringView value_name;
+        switch (value) {
+        case (WindowServer::WindowTileType::None):
+            value_name = "None"sv;
+            break;
+        case (WindowServer::WindowTileType::Left):
+            value_name = "Left"sv;
+            break;
+        case (WindowServer::WindowTileType::Right):
+            value_name = "Right"sv;
+            break;
+        case (WindowServer::WindowTileType::Top):
+            value_name = "Top"sv;
+            break;
+        case (WindowServer::WindowTileType::Bottom):
+            value_name = "Bottom"sv;
+            break;
+        case (WindowServer::WindowTileType::TopLeft):
+            value_name = "TopLeft"sv;
+            break;
+        case (WindowServer::WindowTileType::TopRight):
+            value_name = "TopRight"sv;
+            break;
+        case (WindowServer::WindowTileType::BottomLeft):
+            value_name = "BottomLeft"sv;
+            break;
+        case (WindowServer::WindowTileType::BottomRight):
+            value_name = "BottomRight"sv;
+            break;
+        case (WindowServer::WindowTileType::VerticallyMaximized):
+            value_name = "VerticallyMaximized"sv;
+            break;
+        case (WindowServer::WindowTileType::HorizontallyMaximized):
+            value_name = "HorizontallyMaximized"sv;
+            break;
+        case (WindowServer::WindowTileType::Maximized):
+            value_name = "Maximized"sv;
+            break;
+        default:
+            value_name = "??"sv;
+            break;
+        }
+        return AK::Formatter<FormatString>::format(builder, "{}"sv, value_name);
+    }
+};

@@ -957,6 +957,8 @@ void Window::tile_type_changed(Optional<Screen const&> tile_on_screen)
         set_rect(m_floating_rect);
     send_resize_event_to_client();
     send_move_event_to_client();
+    if (m_tile_type != WindowTileType::None)
+        WindowManager::the().foo(*this);
 }
 
 void Window::send_resize_event_to_client()
