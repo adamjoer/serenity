@@ -37,7 +37,7 @@ WindowManager& WindowManager::the()
 }
 
 WindowManager::WindowManager(Gfx::PaletteImpl& palette)
-    : m_switcher(WindowSwitcher::construct())
+    : m_switcher_overlay(WindowSwitcherOverlay::construct())
     , m_keymap_switcher(KeymapSwitcher::construct())
     , m_palette(palette)
 {
@@ -346,8 +346,8 @@ void WindowManager::add_window(Window& window)
     if (window.type() == WindowType::Popup)
         notify_active_window_input_preempted();
 
-    if (m_switcher->is_visible() && window.type() != WindowType::WindowSwitcher)
-        m_switcher->refresh();
+    if (m_switcher_overlay->is_enabled())
+        m_switcher_overlay->refresh();
 
     Compositor::the().invalidate_occlusions();
 
@@ -379,10 +379,10 @@ void WindowManager::move_to_front_and_make_active(Window& window)
         }
     }
 
-    if (m_switcher->is_visible()) {
-        m_switcher->refresh();
+    if (m_switcher_overlay->is_enabled()) {
+        m_switcher_overlay->refresh();
         if (!window.is_modal()) {
-            m_switcher->select_window(window);
+            m_switcher_overlay->select_window(window);
             set_highlight_window(&window);
         }
     }
@@ -404,8 +404,8 @@ void WindowManager::remove_window(Window& window)
 
     window.invalidate_last_rendered_screen_rects_now();
 
-    if (m_switcher->is_visible() && window.type() != WindowType::WindowSwitcher)
-        m_switcher->refresh();
+    if (m_switcher_overlay->is_enabled())
+        m_switcher_overlay->refresh();
 
     Compositor::the().invalidate_occlusions();
 
@@ -598,8 +598,8 @@ static bool window_type_has_title(WindowType type)
 
 void WindowManager::notify_modified_changed(Window& window)
 {
-    if (m_switcher->is_visible())
-        m_switcher->refresh();
+    if (m_switcher_overlay->is_enabled())
+        m_switcher_overlay->refresh();
 
     tell_wms_window_state_changed(window);
 }
@@ -611,8 +611,8 @@ void WindowManager::notify_title_changed(Window& window)
 
     dbgln_if(WINDOWMANAGER_DEBUG, "[WM] Window({}) title set to '{}'", &window, window.title());
 
-    if (m_switcher->is_visible())
-        m_switcher->refresh();
+    if (m_switcher_overlay->is_enabled())
+        m_switcher_overlay->refresh();
 
     tell_wms_window_state_changed(window);
 }
@@ -621,8 +621,8 @@ void WindowManager::notify_rect_changed(Window& window, Gfx::IntRect const& old_
 {
     dbgln_if(RESIZE_DEBUG, "[WM] Window({}) rect changed {} -> {}", &window, old_rect, new_rect);
 
-    if (m_switcher->is_visible() && window.type() != WindowType::WindowSwitcher)
-        m_switcher->refresh();
+    if (m_switcher_overlay->is_enabled())
+        m_switcher_overlay->refresh();
 
     tell_wms_window_rect_changed(window);
 
@@ -1534,7 +1534,6 @@ Gfx::IntRect WindowManager::arena_rect_for_type(Screen& screen, WindowType type)
     case WindowType::Normal:
         return desktop_rect(screen);
     case WindowType::Menu:
-    case WindowType::WindowSwitcher:
     case WindowType::Taskbar:
     case WindowType::Tooltip:
     case WindowType::Applet:
@@ -1722,13 +1721,13 @@ void WindowManager::process_key_event(KeyEvent& event)
 
     if (event.type() == Event::KeyDown) {
         if ((event.modifiers() == Mod_Super && event.key() == Key_Tab) || (event.modifiers() == (Mod_Super | Mod_Shift) && event.key() == Key_Tab))
-            m_switcher->show(WindowSwitcher::Mode::ShowAllWindows);
+            m_switcher_overlay->show(WindowSwitcherOverlay::Mode::ShowAllWindows);
         else if ((event.modifiers() == Mod_Alt && event.key() == Key_Tab) || (event.modifiers() == (Mod_Alt | Mod_Shift) && event.key() == Key_Tab))
-            m_switcher->show(WindowSwitcher::Mode::ShowCurrentDesktop);
+            m_switcher_overlay->show(WindowSwitcherOverlay::Mode::ShowCurrentDesktop);
     }
-    if (m_switcher->is_visible()) {
+    if (m_switcher_overlay->is_enabled()) {
         request_close_fragile_windows();
-        m_switcher->on_key_event(event);
+        m_switcher_overlay->on_key_event(event);
         return;
     }
 

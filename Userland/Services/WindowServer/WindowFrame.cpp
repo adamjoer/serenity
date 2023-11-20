@@ -219,8 +219,6 @@ MultiScaleBitmaps const* WindowFrame::shadow_bitmap() const
         return s_taskbar_shadow;
     case WindowType::AppletArea:
         return nullptr;
-    case WindowType::WindowSwitcher:
-        return nullptr;
     case WindowType::Popup:
         if (!WindowManager::the().system_effects().window_shadow())
             return nullptr;

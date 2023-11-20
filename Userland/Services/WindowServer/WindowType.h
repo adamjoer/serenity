@@ -12,7 +12,6 @@ enum class WindowType {
     Invalid = 0,
     Normal,
     Menu,
-    WindowSwitcher,
     Taskbar,
     Tooltip,
     Applet,

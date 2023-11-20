@@ -10,8 +10,10 @@
 #include <AK/IntrusiveList.h>
 #include <AK/Vector.h>
 #include <AK/WeakPtr.h>
+#include <LibCore/EventReceiver.h>
 #include <LibGfx/Painter.h>
 #include <LibGfx/Palette.h>
+#include <WindowServer/Event.h>
 #include <WindowServer/MultiScaleBitmaps.h>
 #include <WindowServer/Screen.h>
 
@@ -35,6 +37,7 @@ public:
         Dnd,
         WindowStackSwitch,
         ScreenNumber,
+        WindowSwitcher,
     };
     [[nodiscard]] virtual ZOrder zorder() const = 0;
     virtual void render(Gfx::Painter&, Screen const&) = 0;
@@ -241,6 +244,66 @@ private:
     Window& m_window;
     Gfx::IntRect m_tiled_frame_rect;
     Gfx::Palette m_palette;
+};
+
+class WindowSwitcherOverlay : public RectangularOverlay
+    , public Core::EventReceiver {
+    C_OBJECT(WindowSwitcherOverlay)
+public:
+    enum class Mode {
+        ShowAllWindows,
+        ShowCurrentDesktop
+    };
+
+    virtual ~WindowSwitcherOverlay() override = default;
+
+    ZOrder zorder() const override { return ZOrder::WindowSwitcher; }
+    void render_overlay_bitmap(Gfx::Painter& painter) override;
+
+    void show(Mode mode)
+    {
+        m_mode = mode;
+        set_enabled(true);
+        refresh();
+    }
+
+    void hide()
+    {
+        set_enabled(false);
+    }
+
+    void on_key_event(KeyEvent const&);
+
+    void refresh();
+//    void refresh_if_needed();
+
+    void select_window(Window&);
+
+    Mode mode() const { return m_mode; }
+
+private:
+    WindowSwitcherOverlay()
+    {
+    }
+
+    int thumbnail_width() const { return 64; }
+    int thumbnail_height() const { return 64; }
+    int item_height() const { return 14 + thumbnail_height(); }
+    int padding() const { return 30; }
+    int item_padding() const { return 10; }
+
+    void select_window_at_index(int index);
+    Gfx::IntRect item_rect(size_t index) const;
+    Window* selected_window();
+    void clear_hovered_index();
+
+    virtual void event(Core::Event&) override;
+
+    Mode m_mode { Mode::ShowCurrentDesktop };
+    bool m_windows_on_multiple_stacks { false };
+    Vector<WeakPtr<Window>> m_windows;
+    int m_selected_index { 0 };
+    int m_hovered_index { -1 };
 };
 
 }

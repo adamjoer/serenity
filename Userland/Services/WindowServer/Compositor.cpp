@@ -13,7 +13,6 @@
 #include "Screen.h"
 #include "Window.h"
 #include "WindowManager.h"
-#include "WindowSwitcher.h"
 #include <AK/Debug.h>
 #include <AK/Memory.h>
 #include <AK/ScopeGuard.h>
@@ -531,8 +530,7 @@ void Compositor::compose()
     // Paint the window stack.
     if (m_invalidated_window) {
         auto* fullscreen_window = wm.active_fullscreen_window();
-        // FIXME: Remove the !WindowSwitcher::the().is_visible() check when WindowSwitcher is an overlay
-        if (fullscreen_window && fullscreen_window->is_opaque() && !WindowSwitcher::the().is_visible()) {
+        if (fullscreen_window && fullscreen_window->is_opaque()) {
             compose_window(*fullscreen_window);
             fullscreen_window->clear_dirty_rects();
         } else {
@@ -1170,15 +1168,15 @@ void Compositor::recompute_overlay_rects()
 void Compositor::recompute_occlusions()
 {
     auto& wm = WindowManager::the();
-    bool is_switcher_visible = wm.m_switcher->is_visible();
+    bool is_switcher_visible = wm.m_switcher_overlay->is_enabled();
     auto never_occlude = [&](WindowStack& window_stack) {
         if (is_switcher_visible) {
-            switch (wm.m_switcher->mode()) {
-            case WindowSwitcher::Mode::ShowCurrentDesktop:
+            switch (wm.m_switcher_overlay->mode()) {
+            case WindowSwitcherOverlay::Mode::ShowCurrentDesktop:
                 // Any window on the currently rendered desktop should not be occluded, even if it's behind
                 // another window entirely.
                 return &window_stack == m_current_window_stack || &window_stack == m_transitioning_to_window_stack;
-            case WindowSwitcher::Mode::ShowAllWindows:
+            case WindowSwitcherOverlay::Mode::ShowAllWindows:
                 // The window switcher wants to know about all windows, even those on other desktops
                 return true;
             }
@@ -1210,8 +1208,7 @@ void Compositor::recompute_occlusions()
     bool window_stack_transition_in_progress = m_transitioning_to_window_stack != nullptr;
     auto& main_screen = Screen::main();
     auto* fullscreen_window = wm.active_fullscreen_window();
-    // FIXME: Remove the !WindowSwitcher::the().is_visible() check when WindowSwitcher is an overlay
-    if (fullscreen_window && !WindowSwitcher::the().is_visible()) {
+    if (fullscreen_window) {
         // TODO: support fullscreen windows on all screens
         auto screen_rect = main_screen.rect();
         wm.for_each_visible_window_from_front_to_back([&](Window& w) {
@@ -1241,8 +1238,7 @@ void Compositor::recompute_occlusions()
 
         m_opaque_wallpaper_rects.clear();
     }
-    // FIXME: Remove the WindowSwitcher::the().is_visible() check when WindowSwitcher is an overlay
-    if (!fullscreen_window || WindowSwitcher::the().is_visible() || (fullscreen_window && !fullscreen_window->is_opaque())) {
+    if (!fullscreen_window || (fullscreen_window && !fullscreen_window->is_opaque())) {
         Gfx::DisjointIntRectSet remaining_visible_screen_rects;
         remaining_visible_screen_rects.add_many(Screen::rects());
         bool have_transparent = false;
@@ -1647,7 +1643,7 @@ void Compositor::finish_window_stack_switch()
     m_window_stack_transition_animation = nullptr;
 
     auto& wm = WindowManager::the();
-    if (!wm.m_switcher->is_visible())
+    if (!wm.m_switcher_overlay->is_enabled())
         previous_window_stack->set_all_occluded(true);
     wm.did_switch_window_stack({}, *previous_window_stack, *m_current_window_stack);
 

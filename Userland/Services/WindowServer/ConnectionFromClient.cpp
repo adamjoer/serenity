@@ -17,7 +17,6 @@
 #include <WindowServer/Window.h>
 #include <WindowServer/WindowClientEndpoint.h>
 #include <WindowServer/WindowManager.h>
-#include <WindowServer/WindowSwitcher.h>
 #include <errno.h>
 #include <stdio.h>
 #include <unistd.h>
@@ -751,8 +750,6 @@ void ConnectionFromClient::did_finish_painting(i32 window_id, Vector<Gfx::IntRec
         window.invalidate(rect);
     if (window.has_alpha_channel() && window.alpha_hit_threshold() > 0.0f)
         WindowManager::the().reevaluate_hover_state_for_window(&window);
-
-    WindowSwitcher::the().refresh_if_needed();
 }
 
 void ConnectionFromClient::set_window_backing_store(i32 window_id, [[maybe_unused]] i32 bpp,

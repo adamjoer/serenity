@@ -21,11 +21,11 @@
 #include <WindowServer/Event.h>
 #include <WindowServer/KeymapSwitcher.h>
 #include <WindowServer/MenuManager.h>
+#include <WindowServer/Overlays.h>
 #include <WindowServer/ResizeDirection.h>
 #include <WindowServer/ScreenLayout.h>
 #include <WindowServer/SystemEffects.h>
 #include <WindowServer/WMConnectionFromClient.h>
-#include <WindowServer/WindowSwitcher.h>
 #include <WindowServer/WindowType.h>
 
 namespace WindowServer {
@@ -476,7 +476,7 @@ private:
     u8 m_keyboard_modifiers { 0 };
     u8 m_last_processed_buttons { MouseButton::None };
 
-    NonnullRefPtr<WindowSwitcher> m_switcher;
+    NonnullRefPtr<WindowSwitcherOverlay> m_switcher_overlay;
     NonnullRefPtr<KeymapSwitcher> m_keymap_switcher;
 
     WeakPtr<Button> m_cursor_tracking_button;
@@ -533,9 +533,7 @@ inline IterationDecision WindowManager::for_each_visible_window_from_back_to_fro
         return IterationDecision::Break;
     if (for_each_window.template operator()<WindowType::Tooltip>() == IterationDecision::Break)
         return IterationDecision::Break;
-    if (for_each_window.template operator()<WindowType::Menu>() == IterationDecision::Break)
-        return IterationDecision::Break;
-    return for_each_window.template operator()<WindowType::WindowSwitcher>();
+    return for_each_window.template operator()<WindowType::Menu>();
 }
 
 template<typename Callback>
@@ -556,8 +554,6 @@ inline IterationDecision WindowManager::for_each_visible_window_from_front_to_ba
             return decision;
         }
     };
-    if (for_each_window.template operator()<WindowType::WindowSwitcher>() == IterationDecision::Break)
-        return IterationDecision::Break;
     if (for_each_window.template operator()<WindowType::Menu>() == IterationDecision::Break)
         return IterationDecision::Break;
     if (for_each_window.template operator()<WindowType::Tooltip>() == IterationDecision::Break)

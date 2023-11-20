@@ -262,7 +262,7 @@ void WindowSwitcher::refresh()
     m_rect.set_height(window_count * item_height() + padding() * 2);
     m_rect.center_within(Screen::main().rect());
     if (!m_switcher_window) {
-        m_switcher_window = Window::construct(*this, WindowType::WindowSwitcher);
+        m_switcher_window = Window::construct(*this, WindowType::Invalid);
         m_switcher_window->set_has_alpha_channel(true);
     }
     m_switcher_window->set_rect(m_rect);
